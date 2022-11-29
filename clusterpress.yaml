@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clustpress
+spec:
+  selector:
+    matchLabels:
+      app: blog
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: blog 
+    spec:
+      containers:
+      ## container DB      
+      - name: database
+        image: mysql:5.7
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: rootPassword
+        - name: MYSQL_DATABASE
+          value: database
+        - name: MYSQL_USER
+          value: user
+        - name: MYSQL_PASSWORD
+          value: password          
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+      ## container WordPress    
+      - name: blog
+        image: wordpress:late st
+        ports:
+        - containerPort: 80
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: 127.0.0.1:3306
+        - name: WORDPRESS_DB_NAME
+          value: database
+        - name: WORDPRESS_DB_USER
+          value: user
+        - name: WORDPRESS_DB_PASSWORD
+          value: password  
+      volumes:
+        - name: data

@@ -1,0 +1,208 @@
+## What explains this session? 
+1. Why use containers?
+2. Container, image, how they work? Why the are more efficient
+3. Basic concepts: Orchestrator, why we need them, how they work?
+4. Identifying main differences between the agents running on container platforms such as Kubernetes, ECS, AKS etc.
+
+
+
+
+## Concepts
+1. From classic architecture to microservices
+- Use diagram to explain analogy between containarization on ships and in computer architecture.
+- Use diagram to explain difference between monolitic architecture and dynamic
+- Use diagram to explain difference between Virtualization and containers
+
+2. Introduction to containers: Container runtime 
+   The following steps are going to create a WordPress website with a Mysql database using Docker. 
+   Also you will be able to deploy a Datadog docker agent to monitor the application.
+    
+    Step 1: Creating a Mysql container
+        Script:
+
+                    docker run \ 
+                    -v ${PWD}/data/:/var/lib/mysql \
+                    -p 3306:3306 \
+                    -e MYSQL_ROOT_PASSWORD=rootPassword \
+                    -e MYSQL_DATABASE=database \
+                    -e MYSQL_USER=user \
+                    -e MYSQL_PASSWORD=password \
+                    --name mysql \
+                    mysql:5.7
+        
+        Explaining the script: 
+
+        a. docker run \: Docker command to instruct docker to build a container with the steps below. More info https://docs.docker.com/engine/reference/run/ 
+        b. -v ${PWD}/data/:/var/lib/mysql \: Definining the location of the mysql folder "data" in the container. 
+        c. -p 3306:3306 \: Port in which the Database will be available.
+        d. -e MYSQL_ROOT_PASSWORD=rootPassword \: Setting DB root password
+        e. -e MYSQL_DATABASE=database \: setting Database name
+        f. -e MYSQL_USER=user \: Setting Database user
+        g. -e MYSQL_PASSWORD=password \: Setting Database password
+        h. --name mysql \: Setting container name
+        i. mysql:5.7: Defining image and version to use. https://hub.docker.com/_/mysql 
+
+
+    Step 2: Creating a WordPress container
+        Script:
+
+                    docker run \
+                    -p 8080:80 \
+                    --link=mysql:db \
+                    -e WORDPRESS_DB_HOST=db:3306 \
+                    -e WORDPRESS_DB_NAME=database \
+                    -e WORDPRESS_DB_USER=user \
+                    -e WORDPRESS_DB_PASSWORD=password \
+                    --name wordpress \
+                    wordpress:php7.4
+
+        Explaining the script: 
+
+        a. docker run \: Docker command to instruct docker to build a container with the steps below. More info https://docs.docker.com/engine/reference/run/  
+        b. -p 8080:80 \: Port in which the WordPress will be available.
+        c. --link=mysql:db \ Instructing to the container to use the "mysql" container as a database
+        d. Setting the environment variables to give access to the WordPress container to the "mysql" container database 
+           -e WORDPRESS_DB_HOST=db:3306 \
+           -e WORDPRESS_DB_NAME=database \
+           -e WORDPRESS_DB_USER=user \
+           -e WORDPRESS_DB_PASSWORD=password \
+        e. --name wordpress \: Setting container name
+        f. wordpress:php7.4 Defining image and version to use. https://hub.docker.com/_/wordpress 
+
+    Step 3: Check that the containers are running  
+
+        To confirm if the container has being created run the following command: 
+
+            docker ps
+        
+        This should show two containers identifying ID, port, name etc. 
+
+    Step 4: Install the DD agent:
+
+        Before continuing, let's highlight some facts: 
+
+            - At this point the current application is a server (your mac) running some containers through docker installed on your mac.
+            - If the mac DD agent is running in the server, even when the containers are running on the mac, this DD agent isn't enough to monitor the containers since isn't a containerized agent. 
+            - To monitor these containers you will need to create a new container with the Datadog Docker agent image. 
+
+        Script:
+
+            docker run \
+            -e DD_API_KEY=<your_DD_api_key> \
+            -e DD_LOGS_ENABLED=true \
+            -e DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true \
+            -e DD_CONTAINER_EXCLUDE="name:datadog-agent" \
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
+            -v /proc/:/host/proc/:ro \
+            -v /opt/datadog-agent/run:/opt/datadog-agent/run:rw \
+            -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+            --name datadog-agent
+            gcr.io/datadoghq/agent:latest
+
+        Explaining the script: 
+
+        a.  docker run \: Docker command to instruct docker to build a container with the steps below. More info https://docs.docker.com/engine/reference/run/  https://docs.datadoghq.com/containers/docker/?tab=standard 
+        b. Setting the following environment to define the DD docker agent configuration:
+           -e DD_API_KEY=<your_DD_api_key> \: API key. https://docs.datadoghq.com/containers/docker/?tab=standard#global-options 
+           -e DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true \: Asking to the DD docker agent to collect logs from the other containers. https://docs.datadoghq.com/containers/docker/?tab=standard#optional-collection-agents 
+           -e DD_CONTAINER_EXCLUDE="name:datadog-agent" \: Asking to the DD docker agent to excluide the logs generated by its own container. https://docs.datadoghq.com/containers/docker/?tab=standard#ignore-containers 
+           -e WORDPRESS_DB_PASSWORD=password \
+        c. Setting the volumes where the DD docker agent will be installed in the container
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
+            -v /proc/:/host/proc/:ro \
+            -v /opt/datadog-agent/run:/opt/datadog-agent/run:rw \
+            -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+        d. --name datadog-agent \: Setting container name
+        f. gcr.io/datadoghq/agent:latest: Defining image and version to use. https://console.cloud.google.com/gcr/images/datadoghq/GLOBAL/agent (this is storage in google cloud) you can use this image as well https://hub.docker.com/r/datadog/agent 
+        
+    Step 5: Confirm that the container is running and collecting information: 
+
+        a. To confirm if the container has being created run the following command: 
+
+            docker ps
+        
+        This should show now three containers identifying ID, port, name etc.
+
+        b. To verify that the agent is running and reporting data, run the DD docker agent command status and check in your dogfood account https://docs.datadoghq.com/agent/guide/agent-commands/?tab=agentv6v7#agent-status-and-information 
+
+            sudo docker exec -it <CONTAINER_NAME> agent status  
+
+
+3. Managing containers: Orchestrators
+
+    Step 1: Prepare a minikube cluster https://datadoghq.atlassian.net/wiki/spaces/TS/pages/1248530082/How+to+test+Kubernetes+yourself  
+
+    Step 2: Deploying the wordpress / mysql in Kubernetes
+
+        a. Check the file clusterpress.yaml (with annotations) and understand the components of the deployment: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/ 
+    
+        b. Once the minikube is ready, access from your terminal to the session folder
+        and run the below command to deploy clusterpress.yaml file 
+    
+            kubectl apply -f clusterpress.yaml  
+    
+        This deployment manifest is creating 2 containers for run the DB and the wordpress (Explanation in the file). Run the following command to check if the 
+
+        c. Create a proxy to the local system from the blog container using the port forward command of kubectl: 
+
+            kubectl port-forward <pod_name> 8080:80 
+
+    Step 3: Confirm that the pod containing the application containers is running 
+
+        Let's use kubectl to check for the pod run the following command: 
+
+            kubectl get pod
+    
+        This should show a pod with the name of the pod running. 
+
+    Step 4: Installing the agent
+
+        a. Let's install the agent following our document https://docs.datadoghq.com/containers/kubernetes/installation/?tab=helm. 
+
+        b. Customize the values.yaml file included in the repository to define the agent configuration
+
+        c. Access from your terminal to the session folder and run the below command to deploy the dd_agent_values.yaml file 
+    
+            helm install <RELEASE_NAME> -f dd_agent_values.yaml  --set datadog.apiKey=<DATADOG_API_KEY> datadog/datadog --set targetSystem=<TARGET_SYSTEM>
+
+    Step 5: Confirm that the agent is running
+
+        a. Let's use again kubectl to check for the pods running.
+
+            kubectl get pod
+    
+            This should now show 4 pods. 
+                
+                a. clustpress-<id>(1 replica): This one would be running the application containers 
+                b. datadog-cluster-agent-<id>(2 replicas): The cluster agent which is collecting info from the node containers. You will see two replicas since we have defined this number in the values.yaml as suggestion of the DD team. 
+                c. datadog-<id>(1): Since this is a simple minikube with just one node, we will just one replica of the node agent running on it. This agent which has it's own pod will be running in the same node which the clustpress pod is running and will the responsable to reach the WordPress and Mysql containers, collect their info and send it to the cluster agent. 
+
+                The number for the value "running" shows the number of containers running. The node agent will create a single container for the main agent and accesory agents such APM, Process, Security etc.
+        
+        b. Let's run the kubernetes agent status command to confirm that the agent is running correctly https://docs.datadoghq.com/agent/guide/agent-commands/?tab=agentv6v7#agent-information
+
+            kubectl exec <pod_name> -- agent status
+
+
+References: 
+
+https://kubernetes.io/ 
+
+Exercises from book Introduction-to-DevOps-with-Kubernetes by Onur Yilmaz and Suleyman Akbas
+
+https://github.com/TrainingByPackt/Introduction-to-DevOps-with-Kubernetes 
+
+https://docs.docker.com/ 
+
+https://medium.com/hashmapinc/the-what-why-and-how-of-a-microservices-architecture-4179579423a9 
+
+by Jetinder Singh 
+
+Internal docs: 
+
+https://datadoghq.atlassian.net/wiki/spaces/TS/pages/1248530082/How+to+test+Kubernetes+yourself 
+
+
+helm install test -f dd_agent_values.yaml  --set datadog.apiKey=$DD_API_KEY datadog/datadog --set targetSystem=linux

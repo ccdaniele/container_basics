@@ -1,19 +1,11 @@
 
 datadog:
-  
   clusterName:  # <CLUSTER_NAME>
-  site:  # datadoghq.com
-  # datadog.logLevel -- Set logging verbosity, valid log levels are: trace, debug, info, warn, error, critical, off
   logLevel: INFO
-  # datadog.kubeStateMetricsEnabled -- If true, deploys the kube-state-metrics deployment
-  ## ref: https://github.com/kubernetes/kube-state-metrics/tree/kube-state-metrics-helm-chart-2.13.2/charts/kube-state-metrics
-  # The kubeStateMetricsEnabled option will be removed in the 4.0 version of the Datadog Agent chart.
   kubeStateMetricsEnabled: false
-
   kubeStateMetricsNetworkPolicy:
     # datadog.kubeStateMetricsNetworkPolicy.create -- If true, create a NetworkPolicy for kube state metrics
     create: false
-
   kubeStateMetricsCore:
     # datadog.kubeStateMetricsCore.enabled -- Enable the kubernetes_state_core check in the Cluster Agent (Requires Cluster Agent 1.12.0+)
     ## ref: https://docs.datadoghq.com/integrations/kubernetes_state_core
@@ -25,13 +17,6 @@ datadog:
     ## Disabling this field is not recommended as it results in enabling both checks, it can be useful though during the migration phase.
     ## Migration guide: https://docs.datadoghq.com/integrations/kubernetes_state_core/?tab=helm#migration-from-kubernetes_state-to-kubernetes_state_core
     ignoreLegacyKSMCheck: true
-  
-  clusterChecks:
-    # datadog.clusterChecks.enabled -- Enable the Cluster Checks feature on both the cluster-agents and the daemonset
-    enabled: true
-  tags: []
-  #   - "<KEY_1>:<VALUE_1>"
-  #   - "<KEY_2>:<VALUE_2>"
   kubelet:
     # datadog.kubelet.host -- Override kubelet IP
     host:
@@ -50,17 +35,6 @@ datadog:
     # datadog.kubelet.podLogsPath -- Path (on host) where the PODs logs are located
     # @default -- /var/log/pods on Linux, C:\var\log\pods on Windows
     podLogsPath:
-
-  ## ref: https://docs.datadoghq.com/agent/kubernetes/#event-collection
-  collectEvents: true
-
-  # datadog.leaderElection -- Enables leader election mechanism for event collection
-  leaderElection: true
-
-  # datadog.leaderLeaseDuration -- Set the lease time for leader election in second
-  leaderLeaseDuration:  # 60
-
-  ## Enable logs agent and provide custom configs
   logs:
     # datadog.logs.enabled -- Enables this to activate Datadog Agent log collection
 
@@ -82,8 +56,6 @@ datadog:
 
     ## ref: https://docs.datadoghq.com/agent/logs/advanced_log_collection/?tab=configurationfile#automatic-multi-line-aggregation
     autoMultiLineDetection: false
-
-  ## Enable apm agent and provide custom configs
   apm:
     # datadog.apm.socketEnabled -- Enable APM over Socket (Unix Socket or windows named pipe)
 
@@ -117,35 +89,6 @@ datadog:
 
     # datadog.apm.hostSocketPath -- Host path to the trace-agent socket
     hostSocketPath: /var/run/datadog/
-
-  ## OTLP ingest related configuration
-  
-  ## envFrom to pass configmaps or secrets as environment
-  env: []
-  #   - name: <ENV_VAR_NAME>
-  #     value: <ENV_VAR_VALUE>
-
-  # datadog.confd -- Provide additional check configurations (static and Autodiscovery)
-
-  ## Each key becomes a file in /conf.d
-  ## ref: https://github.com/DataDog/datadog-agent/tree/main/Dockerfiles/agent#optional-volumes
-  ## ref: https://docs.datadoghq.com/agent/autodiscovery/
-  confd: {}
-  #   redisdb.yaml: |-
-  #     init_config:
-  #     instances:
-  #       - host: "name"
-  #         port: "6379"
-  #   kubernetes_state.yaml: |-
-  #     ad_identifiers:
-  #       - kube-state-metrics
-  #     init_config:
-  #     instances:
-  #       - kube_state_url: http://%%host%%:8080/metrics
-  checksd: {}
-  #   service.py: |-
-
-  ## Enable process agent and provide custom configs
   processAgent:
     # datadog.processAgent.enabled -- Set this to true to enable live process monitoring agent
 
@@ -166,62 +109,12 @@ datadog:
 
     # datadog.processAgent.processDiscovery -- Enables or disables autodiscovery of integrations
     processDiscovery: false
-
-  orchestratorExplorer:
-    # datadog.orchestratorExplorer.enabled -- Set this to false to disable the orchestrator explorer
-
-    ## This requires processAgent.enabled and clusterAgent.enabled to be set to true
-    ## ref: TODO - add doc link
-    enabled: true
-
-    # datadog.orchestratorExplorer.container_scrubbing -- Enable the scrubbing of containers in the kubernetes resource YAML for sensitive information
-
-    ## The container scrubbing is taking significant resources during data collection.
-    ## If you notice that the cluster-agent uses too much CPU in larger clusters
-    ## turning this option off will improve the situation.
-    container_scrubbing:
-      enabled: true
-
-  # datadog.ignoreAutoConfig -- List of integration to ignore auto_conf.yaml.
-
-  ## ref: https://docs.datadoghq.com/agent/faq/auto_conf/
-  ignoreAutoConfig: []
-  #  - redisdb
-  #  - kubernetes_state
-
-  # datadog.containerExclude -- Exclude containers from the Agent
-  # Autodiscovery, as a space-sepatered list
-
-  ## ref: https://docs.datadoghq.com/agent/guide/autodiscovery-management/?tab=containerizedagent#exclude-containers
   containerExclude:  # "image:datadog/agent"
-
-  # datadog.containerInclude -- Include containers in the Agent Autodiscovery,
-  # as a space-separated list.  If a container matches an include rule, it’s
-  # always included in the Autodiscovery
-
-  ## ref: https://docs.datadoghq.com/agent/guide/autodiscovery-management/?tab=containerizedagent#include-containers
   containerInclude:
-
-  # datadog.containerExcludeLogs -- Exclude logs from the Agent Autodiscovery,
-  # as a space-separated list
   containerExcludeLogs:
-
-  # datadog.containerIncludeLogs -- Include logs in the Agent Autodiscovery, as
-  # a space-separated list
   containerIncludeLogs:
-
-  # datadog.containerExcludeMetrics -- Exclude metrics from the Agent
-  # Autodiscovery, as a space-separated list
   containerExcludeMetrics:
-
-  # datadog.containerIncludeMetrics -- Include metrics in the Agent
-  # Autodiscovery, as a space-separated list
   containerIncludeMetrics:
-
-  # datadog.excludePauseContainer -- Exclude pause containers from the Agent Autodiscovery.
-
-  ## ref: https://docs.datadoghq.com/agent/guide/autodiscovery-management/?tab=containerizedagent#pause-containers
-  excludePauseContainer: true
 
 clusterAgent:
   # clusterAgent.enabled -- Set this to false to disable Datadog Cluster Agent
